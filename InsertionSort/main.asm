@@ -2,179 +2,160 @@ title InsertionSort
 include Irvine32.inc
 
 .data
-array dword 1h,8h,13h,21h,5h,17h,35h,28h ; array to sort
+array dword 1h,8h,13h,21h,5h,17h,35h,28h  ; Define an array 'array' with 8 doublewords (dwords)
+                                         ; Initial values: 1, 8, 13, 21, 5, 17, 35, 28
 
-newLine byte 0ah, 0dh, 0
+newLine byte 0ah, 0dh, 0                 ; Define newline characters: LF (Line Feed), CR (Carriage Return), and null terminator
 
-unsortedMessage byte "unsorted array : ", 0ah, 0dh, 0 ; sorted array : \n
-sortedMessage byte "sorted array : ", 0ah, 0dh, 0 ; sorted array : \n
+unsortedMessage byte "unsorted array : ", 0ah, 0dh, 0  ; Define string "unsorted array : " followed by newline and null terminator
 
-delimiter byte ", ", 0
+sortedMessage byte "sorted array : ", 0ah, 0dh, 0      ; Define string "sorted array : " followed by newline and null terminator
+
+delimiter byte ", ", 0                   ; Define delimiter string ", " followed by null terminator
 
 .code
 
 swap PROC
-push ebp
-mov ebp,esp
-pushad
+    push ebp          ; Save the current base pointer
+    mov ebp, esp      ; Set up a new base pointer
 
-mov edi ,[ebp+8]
-mov eax , [edi]  ; eax <- *a
+    pushad            ; Push all general-purpose registers (eax, ebx, ecx, edx, esi, edi) onto the stack
 
-mov esi ,[ebp+12]
-mov ebx , [esi]  ; ebx <- *b
+    mov edi, [ebp+8]  ; edi <- address of the first parameter (pointer to a)
+    mov eax, [edi]    ; eax <- value at address edi (value of *a)
 
-mov [esi],eax    ; *b <- *a
-mov [edi],ebx    ; *a <- *b
+    mov esi, [ebp+12] ; esi <- address of the second parameter (pointer to b)
+    mov ebx, [esi]    ; ebx <- value at address esi (value of *b)
 
-popad
-mov esp,ebp
-pop ebp
-ret 8
-swap ENDP
+    mov [esi], eax    ; *b <- value of *a (swap values)
+    mov [edi], ebx    ; *a <- value of *b
 
-printArray Proc
-push ebp
-mov ebp, esp
-pushad
+    popad             ; Restore all general-purpose registers from the stack
 
-;void printArray(int arr[], int size)
-;{
-;    int i;
-;    for (i = 0; i < size; i++)
+    mov esp, ebp      ; Restore the stack pointer
+    pop ebp           ; Restore the previous base pointer
+    ret 8             ; Return, cleaning up 8 bytes (parameters) from the stack
+swap ENDP            ; End of procedure
 
-	 ;initialization
-	 mov ebx,0 ; i = 0 loop counter
-	 mov edi, [ebp + 8] ; array base address
-	 mov edx, [ebp +12]
-	 dec edx	; edx <- size - 1
-	 jmp COND
-	 ;body
-	 BODY:
-	;cout << " " << arr[i];
-	    mov eax, [edi + ebx * 4] ; eax <- array[i] 
-		call WriteHex 		
-		; check if it is the last element		
-		cmp ebx, edx ; i == size-1
-		je STEP
-		push edx
-		mov edx, OFFSET delimiter
-		call WriteString
-		pop edx
-	 ;step
-	 STEP:
-		inc ebx
-	 ;condition		
-	 COND:
-	    cmp ebx, [ebp + 12] ; i < size
-		jl BODY
-		call Crlf
-	mov edx, offset newLine
-	call WriteString
-popad
-mov esp, ebp
-pop ebp
-ret
-printArray Endp
+
+printArray PROC
+    push ebp        ; Save the current base pointer
+    mov ebp, esp    ; Set up a new base pointer
+    pushad          ; Push all general-purpose registers onto the stack
+
+    mov ebx, 0      ; Initialize loop counter ebx to 0
+    mov edi, [ebp + 8]  ; edi <- array base address
+    mov edx, [ebp + 12] ; edx <- size of array
+    dec edx         ; edx <- size - 1
+    jmp COND        ; Jump to condition check
+
+    BODY:
+        mov eax, [edi + ebx * 4]  ; eax <- array[i]
+        call WriteInt   ; Print array element
+
+        cmp ebx, edx   ; Check if it is the last element
+        je STEP        ; Jump to step if last element
+
+        push edx       ; Save edx
+        mov edx, OFFSET delimiter  ; Load delimiter address into edx
+        call WriteString   ; Print delimiter
+        pop edx        ; Restore edx
+
+    STEP:
+        inc ebx        ; Increment loop counter
+    COND:
+        cmp ebx, [ebp + 12]  ; Compare loop counter with array size
+        jl BODY        ; Jump to body if ebx < size
+
+    call Crlf          ; Print newline
+    mov edx, offset newLine  ; Load newline address into edx
+    call WriteString   ; Print newline
+
+    popad             ; Restore all general-purpose registers
+    mov esp, ebp      ; Restore the stack pointer
+    pop ebp           ; Restore the previous base pointer
+    ret               ; Return
+printArray ENDP       ; End of procedure
+
 
 insertionSort proc
-push ebp
-mov ebp,esp
-sub esp,4
-pushad
+    push ebp        ; Save the current base pointer
+    mov ebp, esp    ; Set up a new base pointer
+    sub esp, 4      ; Reserve space on the stack for local variables
+    pushad          ; Push all general-purpose registers onto the stack
 
-;void insertionSort(int arr[], int n)
-;{
-	mov esi, [ebp+8] ; array base address
-	mov edx, [ebp+12] ; length of array
+    mov esi, [ebp+8] ; esi <- array base address
+    mov edx, [ebp+12] ; edx <- size of array
 
-;    int i, key, j;
-;    for (i = 1; i < n; i++) {
-	mov ebx, dword ptr 1h ; i <- 0
-	forLoop:
-		forCond:
-			cmp ebx,edx ; i < n
-			jge forExit
+    mov ebx, dword ptr 1h ; ebx <- 1 (start of loop counter)
+forLoop:
+    forCond:
+        cmp ebx, edx   ; Compare loop counter with array size
+        jge forExit    ; Jump to exit if ebx >= edx
 
-	;        key = arr[i];
-		mov ecx, [esi + ebx * 4] ; key <- arr[i]
-		push ebx ; save i
+    mov ecx, [esi + ebx * 4]  ; ecx <- array[i]
+    push ebx         ; Save ebx (i)
 
-		dec ebx  ;        j = i - 1;
-		mov edi, [esi + ebx * 4] ; arr[j]
-		
-;        while (j >= 0 && arr[j] > key) {
-		whileCond:
-			cmp ebx, dword ptr 0h ;	j >= 0
-			jl whileEnd
-			cmp	edi, ecx ; arr[j] > key
-			jle whileEnd
-		
-;            &arr[j + 1]
-			inc ebx
-			lea eax,[esi + ebx * 4]
-			dec ebx
+    dec ebx          ; ebx <- i - 1
+    mov edi, [esi + ebx * 4]  ; edi <- array[j]
 
-;			 arr[j]
-			mov edi, [esi + ebx * 4]
-;			 arr[j+1] = arr[j]
-			mov [eax],edi
+whileCond:
+        cmp ebx, dword ptr 0h  ; Compare ebx with 0
+        jl whileEnd     ; Jump to whileEnd if ebx < 0
+        cmp edi, ecx    ; Compare array[j] with key
+        jle whileEnd    ; Jump to whileEnd if array[j] <= key
 
-			dec ebx ; j = j - 1;
-			mov edi, [esi + ebx * 4]
+        inc ebx         ; ebx <- j + 1
+        lea eax,[esi + ebx * 4] ; eax <- &array[j+1]
+        dec ebx         ; ebx <- j
 
-			jmp whileCond
-;        }
+        mov edi, [esi + ebx * 4] ; edi <- array[j]
+        mov [eax], edi  ; array[j+1] = array[j]
 
-		whileEnd:      
-			
-			;arr[j + 1] = key
-			inc ebx
-			lea eax, [esi + ebx * 4]
-			mov [eax],ecx
+        dec ebx         ; ebx <- j - 1
+        mov edi, [esi + ebx * 4] ; edi <- array[j-1]
 
-			pop ebx ; restore i
+        jmp whileCond   ; Jump to whileCond
 
-	forStep:
-		inc ebx ; i++
-		jmp forLoop
+whileEnd:
+        inc ebx         ; ebx <- j + 1
+        lea eax, [esi + ebx * 4] ; eax <- &array[j+1]
+        mov [eax], ecx  ; array[j+1] = key
 
+        pop ebx         ; Restore ebx (i)
 
+forStep:
+    inc ebx          ; Increment loop counter (i)
+    jmp forLoop      ; Jump to forLoop
 
-
-;}
 forExit:
-popad
-mov esp,ebp
-pop ebp
-ret 8
-insertionSort endp
+    popad            ; Restore all general-purpose registers
+    mov esp, ebp     ; Restore the stack pointer
+    pop ebp          ; Restore the previous base pointer
+    ret 8            ; Return, cleaning up 8 bytes (parameters) from the stack
+insertionSort endp   ; End of procedure
+
 
 main proc
+    mov edx, offset unsortedMessage  ; Load address of unsortedMessage into edx
+    call WriteString   ; Call WriteString to print unsortedMessage
 
-;    printArray(array[], sizeOfArray);
-	mov edx, offset unsortedMessage
-	call WriteString
+    push LengthOf array  ; Push size of array as parameter
+    push OFFSET array    ; Push address of array as parameter
+    call printArray      ; Call printArray to print the unsorted array
 
-	 push LengthOf array
-	 push OFFSET array
-	 call printArray
+    push LengthOf array  ; Push size of array as parameter
+    push OFFSET array    ; Push address of array as parameter
+    call insertionSort   ; Call insertionSort to sort the array
 
-;    insertionSort(array[], sizeOfArray);
-	 push LengthOf array
-	 push OFFSET array
-	 call insertionSort
-	 
-;    printf("Sorted array: \n");
-	 mov edx, offset sortedMessage
-	call WriteString
+    mov edx, offset sortedMessage  ; Load address of sortedMessage into edx
+    call WriteString   ; Call WriteString to print sortedMessage
 
-;    printArray(array[], sizeOfArray);
-	 push LengthOf array
-	 push OFFSET array
-	 call printArray
+    push LengthOf array  ; Push size of array as parameter
+    push OFFSET array    ; Push address of array as parameter
+    call printArray      ; Call printArray to print the sorted array
 
-
+    ; Exit the program
 exit
-main endp
-end main
+main endp          ; End of main procedure
+end main             ; End of program
